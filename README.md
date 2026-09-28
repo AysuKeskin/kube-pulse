@@ -10,6 +10,31 @@ metrics and alerts that actually fire.
 
 Live: `curl https://devops-case.aysu-keskin.uk/ping` → `pong`
 
+> ❗ **The public URL is offline for now.** I've stopped the EC2 instance to save on
+> server costs, so the URL won't answer until it's started again. Nothing was
+> torn down: the Elastic IP, DNS record, cluster, and TLS cert are all still in
+> place. A captured run against the live URL is in
+> [`docs/evidence/public-url/`](docs/evidence/public-url/public-url-ping.png).
+> To bring it back (takes about 2–3 minutes):
+>
+> ```sh
+> ID=$(terraform -chdir=infra/terraform output -raw ec2_instance_id)
+> aws ec2 start-instances --instance-ids "$ID" --region eu-north-1
+> aws ec2 wait instance-status-ok --instance-ids "$ID" --region eu-north-1
+> curl https://devops-case.aysu-keskin.uk/ping   # → pong once minikube is back up
+> ```
+>
+> minikube runs as a systemd unit and restarts on boot. If `/ping` times out
+> while the pods are Running, the host → minikube port forwards didn't
+> reconnect after the reboot. Restart them from an SSM session
+> (`aws ssm start-session --target "$ID" --region eu-north-1`):
+>
+> ```sh
+> sudo systemctl restart minikube-http-forward minikube-https-forward
+> ```
+>
+> More in [RUNBOOK.md → Common issues](RUNBOOK.md#common-issues).
+
 Security posture and reporting: see [SECURITY.md](SECURITY.md). Design decisions: [`docs/adr/`](docs/adr/).
 
 ## Architecture
